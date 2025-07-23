@@ -12,10 +12,15 @@ class BlogController extends Controller
 {
     //
 
-    public function index()
+    public function index(Request $request)
     {
+                $blog = Blog::orderByDesc('created_at');
 
-        $blog = Blog::orderByDesc('created_at')->get();
+         if(!empty($request->keyword)){
+             $blog = $blog->where('title','like','%'. $request->keyword .'%');
+         }
+
+      $blog = $blog->get();
 
         return response()->json([
             'status' => 'true',
@@ -33,14 +38,14 @@ class BlogController extends Controller
                 'message' => 'blog not found ',
 
             ]);
-        } 
+        }
 
         $blog['date'] = \Carbon\Carbon::parse($blog->created_at)->format('d M Y');
 
-          return response()->json([
-                'status' => true,
-                'data' => $blog
-            ]);
+        return response()->json([
+            'status' => true,
+            'data' => $blog
+        ]);
     }
 
     public function store(Request $request)
@@ -74,23 +79,21 @@ class BlogController extends Controller
             $imgarray = explode('.', $tempImg->image);
             $ext = last($imgarray);
             $imageName = time() . '-' . $blog->id . '.' . $ext;
+
+
+
+
+            $blog->image = $imageName;
+            $blog->save();
+
+
+            $sorcepath = public_path('uploads/temp/' . $tempImg->image);
+            $destpath = public_path('uploads/blogs/' . $imageName);
+
+
+
+            File::copy($sorcepath, $destpath);
         }
-
-
-
-        $blog->image = $imageName;
-        $blog->save();
-
-
-        $sorcepath = public_path('uploads/temp/' . $tempImg->image);
-        $destpath = public_path('uploads/blogs/' . $imageName);
-
-        if (!File::exists($sorcepath)) {
-            return response()->json(['error' => 'Source file does not exist', 'path' => $sorcepath], 404);
-        }
-
-        File::copy($sorcepath, $destpath);
-
         return response()->json([
             'status' => true,
             'message' => 'blog added ',
@@ -98,7 +101,97 @@ class BlogController extends Controller
         ]);
     }
 
-    public function update() {}
+    public function update($id, Request $request)
+    {
 
-    public function delete() {}
+
+        $blog = Blog::find($id);
+
+        if ($blog == null) {
+            return response()->json([
+                'status' => false,
+                'message' => 'blog not found',
+
+            ]);
+        }
+        $validate = Validator::make($request->all(), [
+            'title' => 'required|min:5',
+            'author' => 'required|min:3'
+        ]);
+
+        if ($validate->fails()) {
+            return response()->json([
+                'status' => false,
+                'message' => 'please fffffix',
+                'errors' => $validate->errors()
+            ]);
+        }
+
+
+
+
+
+        $blog->title = $request->title;
+        $blog->shortDesc = $request->shortDesc;
+        $blog->description = $request->description;
+        $blog->author = $request->author;
+        $blog->save();
+
+        $tempImg = TempImg::find($request->image_id);
+
+        if ($tempImg != null) {
+
+
+            File::delete(public_path('uploads/blogs/' . $blog->image));
+            $imgarray = explode('.', $tempImg->image);
+            $ext = last($imgarray);
+            $imageName = time() . '-' . $blog->id . '.' . $ext;
+
+
+
+
+            $blog->image = $imageName;
+            $blog->save();
+
+
+            $sorcepath = public_path('uploads/temp/' . $tempImg->image);
+            $destpath = public_path('uploads/blogs/' . $imageName);
+
+            if (!File::exists($sorcepath)) {
+                return response()->json(['error' => 'Source file does not exist', 'path' => $sorcepath], 404);
+            }
+
+            File::copy($sorcepath, $destpath);
+        }
+        return response()->json([
+            'status' => true,
+            'message' => 'blog updated ',
+            'data' => $blog,
+        ]);
+    }
+
+    public function delete($id)
+    {
+
+        $blog = Blog::find($id);
+
+        if ($blog == null) {
+            return response()->json([
+                'status' => false,
+                'message' => 'blog not found',
+
+            ]);
+        }
+        //    delete from images
+        File::delete(public_path('uploads/blogs/' . $blog->image));
+
+        // delete from database
+
+        $blog->delete();
+        return response()->json([
+            'status' => true,
+            'message' => 'blog deleted ',
+
+        ]);
+    }
 }

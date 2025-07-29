@@ -4,6 +4,9 @@ use App\Http\Controllers\BlogController;
 use App\Http\Controllers\TempimgController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\GoogleAuthController;
+use Tymon\JWTAuth\Facades\JWTAuth;
+
 
 Route::get('/user', function (Request $request) {
     return $request->user();
@@ -18,6 +21,17 @@ Route::put('blog/{id}',[BlogController::class,'update']);
 Route::delete('blog/{id}',[BlogController::class,'delete']);
 
 
+Route::post('/auth/google', [GoogleAuthController::class, 'google']);
+
+
 Route::post('createblog',[BlogController::class,'store']);
 
 Route::post('save-img',[TempimgController::class,'store']);
+
+
+
+
+
+
+
+

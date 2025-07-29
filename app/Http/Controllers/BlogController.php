@@ -20,10 +20,10 @@ class BlogController extends Controller
              $blog = $blog->where('title','like','%'. $request->keyword .'%');
          }
 
-      $blog = $blog->get();
+      $blog = $blog->paginate(4);
 
         return response()->json([
-            'status' => 'true',
+            'status' => 'true',     
             'data' => $blog
         ]);
     }
